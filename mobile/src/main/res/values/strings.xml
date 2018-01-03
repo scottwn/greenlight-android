@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Green Light Collective</string>
+    <string name="sign_up">Don\'t have a member ID? <a href="http://greenlight-courses.herokuapp.com">Sign up here!</a></string>
+</resources>
