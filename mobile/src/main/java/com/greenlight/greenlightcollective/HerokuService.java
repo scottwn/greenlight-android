@@ -1,14 +1,12 @@
 package com.greenlight.greenlightcollective;
 
-import java.io.File;
-
+import okhttp3.MultipartBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
-import retrofit2.http.Body;
-import retrofit2.http.Field;
 import retrofit2.http.GET;
+import retrofit2.http.Multipart;
 import retrofit2.http.POST;
-import retrofit2.http.Path;
+import retrofit2.http.Part;
 import retrofit2.http.Query;
 
 public interface HerokuService {
@@ -19,6 +17,7 @@ public interface HerokuService {
             @Query("resource-type") String type
     );
 
+    @Multipart
     @POST("/resources")
-    Call<ResponseBody> setPicture(@Field("id") String memberID, @Field("picture") File pictureFile);
+    Call<ResponseBody> setPicture(@Part("id") String memberID, @Part MultipartBody.Part pictureFile);
 }

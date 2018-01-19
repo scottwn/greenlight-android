@@ -15,18 +15,21 @@ import android.view.View;
 import org.apache.commons.io.IOUtils;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
+import retrofit2.converter.scalars.ScalarsConverterFactory;
 
 import static com.greenlight.greenlightcollective.MainActivity.EXTRA_ID;
 
@@ -76,6 +79,7 @@ public class UploadPicture extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        System.out.println("activity result");
         File outputFile = new File(outputFileUri.getPath());
 
         if (resultCode == RESULT_OK) {
@@ -111,10 +115,16 @@ public class UploadPicture extends AppCompatActivity {
 
                 //upload the picture to the Green Light DB
                 Retrofit retrofit = new Retrofit.Builder()
+                        .addConverterFactory(ScalarsConverterFactory.create())
                         .baseUrl("https://greenlight-courses.herokuapp.com")
                         .build();
                 final HerokuService service = retrofit.create(HerokuService.class);
-                Call<ResponseBody> call = service.setPicture(memberID,outputFile);
+                MultipartBody.Part uploadFile = MultipartBody.Part.createFormData(
+                        "picture",
+                        outputFile.getName(),
+                        RequestBody.create(MediaType.parse("image/*"), outputFile)
+                );
+                Call<ResponseBody> call = service.setPicture(memberID,uploadFile);
                 call.enqueue(new Callback<ResponseBody>() {
                     @Override
                     public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {

@@ -30,4 +30,5 @@ dependencies {
     implementation 'org.postgresql:postgresql:42.1.4'
     compile 'com.squareup.retrofit2:retrofit:2.1.0'
     compile group: 'commons-io', name: 'commons-io', version: '2.6'
+    compile 'com.squareup.retrofit2:converter-scalars:2.1.0'
 }
