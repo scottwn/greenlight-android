@@ -13,7 +13,11 @@ import retrofit2.http.Query;
 
 public interface HerokuService {
     @GET("/resources")
-    Call<ResponseBody> getPicture(@Query("id") String memberID, @Query("email") String memberEmail);
+    Call<ResponseBody> getResource(
+            @Query("id") String memberID,
+            @Query("email") String memberEmail,
+            @Query("resource-type") String type
+    );
 
     @POST("/resources")
     Call<ResponseBody> setPicture(@Field("id") String memberID, @Field("picture") File pictureFile);

@@ -47,7 +47,7 @@ public class MainActivity extends AppCompatActivity {
                 .baseUrl("https://greenlight-courses.herokuapp.com")
                 .build();
         final HerokuService service = retrofit.create(HerokuService.class);
-        Call<ResponseBody> call = service.getPicture(memberID,memberEmail);
+        Call<ResponseBody> call = service.getResource(memberID,memberEmail,"picture");
         System.out.println("calling service");
         call.enqueue(new Callback<ResponseBody>() {
             @Override
