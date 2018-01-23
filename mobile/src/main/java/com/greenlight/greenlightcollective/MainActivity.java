@@ -3,13 +3,11 @@ package com.greenlight.greenlightcollective;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.Editable;
 import android.text.method.LinkMovementMethod;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
@@ -19,36 +17,34 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 
-public class MainActivity extends AppCompatActivity {
-    public static final String EXTRA_ID = "com.greenlight.greenlightcollective.ID";
-    private Intent credentials, promptIntent;
-    private File id, picture;
+public class MainActivity extends AppCompatActivity
+{
     private String idString, emailString;
+    private GreenlightProperties properties;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState)
+    {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         TextView t2 = (TextView) findViewById(R.id.signUpView);
         t2.setMovementMethod(LinkMovementMethod.getInstance());
-        credentials = new Intent(getApplicationContext(), DisplayCredentials.class);
-        promptIntent = new Intent(getApplicationContext(), UploadPicture.class);
-        id = new File(getApplicationContext().getFilesDir(),"id.txt");
-        picture = new File(getApplicationContext().getFilesDir(),"picture.jpg");
-        if(picture.exists())
+        properties = new GreenlightProperties();
+        if(properties.picture.exists())
         {
-            startActivity(credentials);
+            startActivity(properties.credentials);
         }
     }
 
     private void persistDataToActivity(Intent intent)
     {
         //Write ID to file.
-        try {
-            FileOutputStream stream = new FileOutputStream(id);
+        try
+        {
+            FileOutputStream stream = new FileOutputStream(properties.id);
             stream.write(idString.getBytes());
         }
-        catch (IOException e)
+        catch(IOException e)
         {
             e.printStackTrace();
         }
@@ -63,18 +59,19 @@ public class MainActivity extends AppCompatActivity {
         emailString = greenlightEmail.getText().toString();
         System.out.println("login with " + idString + " " + emailString);
         TextView error = (TextView) findViewById(R.id.errorView);
-        checkLogin(idString,emailString,error);
+        checkLogin(error);
     }
 
-    private void checkLogin(final String memberID, String memberEmail, final TextView error)
+    private void checkLogin(final TextView error)
     {
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://greenlight-courses.herokuapp.com")
                 .build();
         final HerokuService service = retrofit.create(HerokuService.class);
-        Call<ResponseBody> call = service.getResource(memberID,memberEmail,"picture");
+        Call<ResponseBody> call = service.getResource(idString, emailString, "picture");
         System.out.println("calling service");
-        call.enqueue(new Callback<ResponseBody>() {
+        call.enqueue(new Callback<ResponseBody>()
+        {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response)
             {
@@ -99,7 +96,7 @@ public class MainActivity extends AppCompatActivity {
                         System.out.println("null response");
                         //Valid login but no picture, prompt user to upload picture.
                         error.setText("Looks like you don't have a picture yet. Let's upload one.");
-                        persistDataToActivity(promptIntent);
+                        persistDataToActivity(properties.promptIntent);
                     }
                     else if(responseType.equals("text"))
                     {
@@ -112,13 +109,13 @@ public class MainActivity extends AppCompatActivity {
                         System.out.println("picture exists");
                         error.setText("Success!");
                         //Save the picture locally.
-                        FileOutputStream stream = new FileOutputStream(picture);
+                        FileOutputStream stream = new FileOutputStream(properties.picture);
                         stream.write(body.bytes());
                         stream.close();
-                        persistDataToActivity(credentials);
+                        persistDataToActivity(properties.credentials);
                     }
                 }
-                catch (IOException e)
+                catch(IOException e)
                 {
                     e.printStackTrace();
                     //Also display on login screen.

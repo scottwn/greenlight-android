@@ -23,6 +23,7 @@
         </activity>
         <activity android:name=".UploadPicture" />
         <activity android:name=".DisplayCredentials"></activity>
+
     </application>
 
 </manifest>

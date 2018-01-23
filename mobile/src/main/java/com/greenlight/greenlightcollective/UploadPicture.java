@@ -31,28 +31,118 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.scalars.ScalarsConverterFactory;
 
-import static com.greenlight.greenlightcollective.MainActivity.EXTRA_ID;
-
-
-public class UploadPicture extends AppCompatActivity {
-
+public class UploadPicture extends AppCompatActivity
+{
     private Uri outputFileUri;
-    private String memberID;
-
     private static final int SELECT_PICTURE = 1;
+    private GreenlightProperties properties;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState)
+    {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_upload_picture);
+        properties = new GreenlightProperties();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data)
+    {
+        System.out.println("activity result");
+        if(resultCode == RESULT_OK)
+        {
+            if(requestCode == SELECT_PICTURE)
+            {
+                final boolean isCamera;
+                if(data == null)
+                {
+                    isCamera = true;
+                }
+                else
+                {
+                    final String action = data.getAction();
+                    if(action == null)
+                    {
+                        isCamera = false;
+                    }
+                    else
+                    {
+                        isCamera = action.equals(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+                    }
+                }
+
+                if(!isCamera)
+                {
+                    //Write to picture.jpg.
+                    try
+                    {
+                        ContentResolver resolver = getApplicationContext().getContentResolver();
+                        InputStream originalFile = resolver.openInputStream(data.getData());
+                        FileOutputStream stream = new FileOutputStream(properties.picture);
+                        IOUtils.copy(originalFile, stream);
+                    }
+                    catch(Exception e)
+                    {
+                        e.printStackTrace();
+                    }
+                }
+                try
+                {
+                    //upload the picture to the Green Light DB
+                    Retrofit retrofit = new Retrofit.Builder()
+                            .addConverterFactory(ScalarsConverterFactory.create())
+                            .baseUrl("https://greenlight-courses.herokuapp.com")
+                            .build();
+                    final HerokuService service = retrofit.create(HerokuService.class);
+                    MultipartBody.Part uploadFile = MultipartBody.Part.createFormData(
+                            "picture",
+                            properties.picture.getName(),
+                            RequestBody.create(MediaType.parse("image/*"), properties.picture)
+                    );
+                    Call<ResponseBody> call = service.setPicture(properties.reader.readLine(),
+                            uploadFile);
+                    call.enqueue(new Callback<ResponseBody>()
+                    {
+                        @Override
+                        public void onResponse(Call<ResponseBody> call, Response<ResponseBody>
+                                response)
+                        {
+                            try
+                            {
+                                System.out.println(response.body().string());
+                            }
+                            catch(IOException e)
+                            {
+                                e.printStackTrace();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(Call<ResponseBody> call, Throwable t)
+                        {
+                            t.printStackTrace();
+                        }
+                    });
+                }
+                catch(IOException e)
+                {
+                    e.printStackTrace();
+                }
+                startActivity(properties.credentials);
+            }
+        }
+    }
 
     public void openImageIntent(View v)
     {
-        // Determine Uri of camera image to save.
-        File picture = new File(getApplicationContext().getFilesDir(), "picture.jpg");
-        outputFileUri = Uri.fromFile(picture);
-
-        // Camera.
+        outputFileUri = Uri.fromFile(properties.picture);
+        //Create camera intent.
         final List<Intent> cameraIntents = new ArrayList<Intent>();
         final Intent captureIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
         final PackageManager packageManager = getPackageManager();
         final List<ResolveInfo> listCam = packageManager.queryIntentActivities(captureIntent, 0);
-        for(ResolveInfo res : listCam) {
+        for(ResolveInfo res : listCam)
+        {
             final String packageName = res.activityInfo.packageName;
             final Intent intent = new Intent(captureIntent);
             intent.setComponent(new ComponentName(packageName, res.activityInfo.name));
@@ -60,119 +150,17 @@ public class UploadPicture extends AppCompatActivity {
             intent.putExtra(MediaStore.EXTRA_OUTPUT, outputFileUri);
             cameraIntents.add(intent);
         }
-
-        // Filesystem.
+        //Create document chooser.
         final Intent galleryIntent = new Intent();
         galleryIntent.setType("image/jpg");
         galleryIntent.setAction(Intent.ACTION_GET_CONTENT);
-
-        // Chooser of filesystem options.
+        //Add the document options to the chooser.
         final Intent chooserIntent = Intent.createChooser(galleryIntent, "Select Source");
-
-        // Add the camera options.
-        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, cameraIntents.toArray(new Parcelable[cameraIntents.size()]));
-
+        //Add the camera options to the chooser.
+        chooserIntent.putExtra(
+                Intent.EXTRA_INITIAL_INTENTS,
+                cameraIntents.toArray(new Parcelable[cameraIntents.size()])
+        );
         startActivityForResult(chooserIntent, SELECT_PICTURE);
     }
-
-
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        System.out.println("activity result");
-        File outputFile = new File(outputFileUri.getPath());
-
-        if (resultCode == RESULT_OK) {
-            if (requestCode == SELECT_PICTURE) {
-                final boolean isCamera;
-                if (data == null) {
-                    isCamera = true;
-                } else {
-                    final String action = data.getAction();
-                    if (action == null) {
-                        isCamera = false;
-                    } else {
-                        isCamera = action.equals(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
-                    }
-                }
-
-                if(!isCamera)
-                {
-                    //write to picture.jpg
-                    //File originalFile = new File(data.getData().getPath());
-                    try
-                    {
-                        ContentResolver resolver = getApplicationContext().getContentResolver();
-                        InputStream originalFile  = resolver.openInputStream(data.getData());
-                        FileOutputStream stream = new FileOutputStream(outputFile);
-                        IOUtils.copy(originalFile,stream);
-                    }
-                    catch(Exception e)
-                    {
-                        e.printStackTrace();
-                    }
-                }
-
-                //upload the picture to the Green Light DB
-                Retrofit retrofit = new Retrofit.Builder()
-                        .addConverterFactory(ScalarsConverterFactory.create())
-                        .baseUrl("https://greenlight-courses.herokuapp.com")
-                        .build();
-                final HerokuService service = retrofit.create(HerokuService.class);
-                MultipartBody.Part uploadFile = MultipartBody.Part.createFormData(
-                        "picture",
-                        outputFile.getName(),
-                        RequestBody.create(MediaType.parse("image/*"), outputFile)
-                );
-                Call<ResponseBody> call = service.setPicture(memberID,uploadFile);
-                call.enqueue(new Callback<ResponseBody>() {
-                    @Override
-                    public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                        try
-                        {
-                            System.out.println(response.body().string());
-                        }
-                        catch(IOException e)
-                        {
-                            e.printStackTrace();
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(Call<ResponseBody> call, Throwable t) {
-                        t.printStackTrace();
-                    }
-                });
-
-                //start the credentials activity
-                Intent credentials = new Intent(getApplicationContext(),
-                        DisplayCredentials.class);
-                credentials.putExtra(EXTRA_ID,memberID);
-                startActivity(credentials);
-            }
-        }
-
-    }
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState)
-    {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_upload_picture);
-        Intent intent = getIntent();
-        memberID = intent.getStringExtra(EXTRA_ID);
-    }
-    /*
-    private void getPicture()
-    {
-        Intent pickIntent = new Intent();
-        pickIntent.setType("image/jpeg");
-        pickIntent.setAction(Intent.ACTION_GET_CONTENT);
-        Intent takePhotoIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        String pickTitle = "You can choose a picture from your phone or take a new picture";
-        Intent chooserIntent = Intent.createChooser(pickIntent,pickTitle);
-        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[] {takePhotoIntent});
-        startActivityForResult(chooserIntent,SELECT_PICTURE);
-    }
-    */
 }

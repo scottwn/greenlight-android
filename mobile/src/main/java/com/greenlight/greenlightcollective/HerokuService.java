@@ -9,7 +9,8 @@ import retrofit2.http.POST;
 import retrofit2.http.Part;
 import retrofit2.http.Query;
 
-public interface HerokuService {
+public interface HerokuService
+{
     @GET("/resources")
     Call<ResponseBody> getResource(
             @Query("id") String memberID,
@@ -19,5 +20,6 @@ public interface HerokuService {
 
     @Multipart
     @POST("/resources")
-    Call<ResponseBody> setPicture(@Part("id") String memberID, @Part MultipartBody.Part pictureFile);
+    Call<ResponseBody> setPicture(@Part("id") String memberID, @Part MultipartBody.Part
+            pictureFile);
 }

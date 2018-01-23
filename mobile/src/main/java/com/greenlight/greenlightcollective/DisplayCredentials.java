@@ -8,30 +8,36 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import java.io.File;
+import java.io.IOException;
 
-import static com.greenlight.greenlightcollective.MainActivity.EXTRA_ID;
-
-public class DisplayCredentials extends AppCompatActivity {
-
-    public void logout(View view)
-    {
-        File picture = new File(getApplicationContext().getFilesDir(), "picture.jpg");
-        picture.delete();
-        Intent login = new Intent(getApplicationContext(),MainActivity.class);
-        startActivity(login);
-    }
+public class DisplayCredentials extends AppCompatActivity
+{
+    private GreenlightProperties properties;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState)
+    {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_display_credentials);
-        Intent intent = getIntent();
-        File picture = new File(getApplicationContext().getFilesDir(), "picture.jpg");
-        Uri uri = Uri.fromFile(picture);
+        properties = new GreenlightProperties();
+        Uri uri = Uri.fromFile(properties.picture);
         ImageView imageView = (ImageView) findViewById(R.id.imageView);
         imageView.setImageURI(uri);
         TextView textView = (TextView) findViewById(R.id.memberID);
-        textView.setText(intent.getStringExtra(EXTRA_ID));
+        try
+        {
+            textView.setText(properties.reader.readLine());
+        }
+        catch(IOException e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    public void logout(View view)
+    {
+        properties.picture.delete();
+        Intent login = new Intent(getApplicationContext(), MainActivity.class);
+        startActivity(login);
     }
 }
